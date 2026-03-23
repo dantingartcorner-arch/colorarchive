@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>色研聖經 | 1-24色全資料典藏互動百科</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600;700&display=swap');
+        
+        body { font-family: 'Noto Serif TC', serif; background-color: #F3F2EE; color: #1C1917; overflow: hidden; }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* 書卷模式佈置 */
+        .book-sheet { 
+            width: 1150px; height: 820px; background: #FDFBF7; 
+            box-shadow: 0 50px 100px -20px rgba(0,0,0,0.4); 
+            display: flex; border-radius: 4px; position: relative;
+        }
+        .book-spine { position: absolute; left: 50%; width: 2px; height: 100%; background: linear-gradient(to right, rgba(0,0,0,0.1), transparent, rgba(0,0,0,0.1)); z-index: 10; }
+        
+        /* 祕密史料區：高質感黑金配色 */
+        .secret-archive {
+            background: #0F0E0D; color: #E7E5E4; padding: 2.5rem; border-radius: 1.5rem; position: relative;
+            overflow: hidden; border-left: 5px solid #C27A29; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .secret-archive::before {
+            content: "SECRET CHRONICLE"; position: absolute; top: 20px; right: -20px; font-size: 40px; font-weight: 900; opacity: 0.05; transform: rotate(15deg);
+        }
+        .painting-frame { box-shadow: 0 30px 60px -12px rgba(0,0,0,0.4); border: 15px solid #fff; outline: 1px solid #d1d5db; }
+        .active-btn { background: white !important; color: #1C1917 !important; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="antialiased min-h-screen">
+
+    <div id="app" class="h-screen flex flex-col">
+        <header class="bg-white border-b border-stone-200 px-8 py-4 flex justify-between items-center z-50 shadow-sm">
+            <div class="flex items-center gap-10">
+                <h1 class="text-2xl font-bold tracking-tighter italic">色研聖經 <span class="font-light text-stone-300">|</span> 360 ARCHIVE</h1>
+                <nav class="flex bg-stone-100 p-1 rounded-xl">
+                    <button onclick="setView('web')" id="btn-web" class="px-6 py-1.5 rounded-lg text-xs font-bold transition-all active-btn">百科模式</button>
+                    <button onclick="setView('book')" id="btn-book" class="px-6 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-400">電子書模式</button>
+                </nav>
+            </div>
+            
+            <div class="flex-grow max-w-md mx-12">
+                <input type="text" id="searchInput" oninput="handleSearch()" placeholder="搜尋編號、顏色、畫家或野史關鍵字..." 
+                    class="w-full bg-stone-100 border-none rounded-full px-6 py-2.5 text-sm focus:ring-2 focus:ring-[#C27A29] transition-all">
+            </div>
+
+            <button onclick="copyPost()" class="bg-[#C27A29] text-white px-8 py-2.5 rounded-full text-xs font-bold shadow-lg hover:bg-[#A66622] transition-all flex items-center gap-2">
+                <span>✨ 產出祕密史料文案</span>
+            </button>
+        </header>
+
+        <div class="flex-grow flex overflow-hidden">
+            <aside class="w-80 bg-stone-50 border-r border-stone-200 flex flex-col">
+                <div class="p-4 border-b border-stone-200 flex justify-between items-center bg-stone-100/30">
+                    <span class="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase font-serif">典藏庫 (Vol. 01-24)</span>
+                    <span id="color-count" class="text-[10px] bg-stone-200 px-2.5 py-1 rounded text-stone-600 font-mono">24</span>
+                </div>
+                <div id="color-list" class="flex-grow overflow-y-auto p-3 space-y-1 no-scrollbar"></div>
+            </aside>
+
+            <main id="main-display" class="flex-grow overflow-y-auto no-scrollbar relative"></main>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-stone-900 text-white px-10 py-4 rounded-full text-sm font-bold opacity-0 transition-all pointer-events-none z-[100] shadow-2xl">
+        祕密史料已複製，準備震撼社群！
+    </div>
+
+    <script>
+        // 【核心資料庫：一次性完整載入 01 到 24 號顏色】
+        const fullDatabase = [
+            { id: "01", name: "死頭紫", latin: "Caput Mortuum", hex: "#5E2C2C", type: "氧化鐵殘渣", history: "拉丁文意為『死人頭』。這源於煉金術燒毀後的廢渣，代表著物質在提煉出精華後剩下的腐朽遺骸。", secret: "【教宗的恐懼】：維拉斯蓋茲繪製《教宗英諾森十世》時，特意在法衣褶皺中混入了死頭紫。教宗看完畫後驚呼：『太真實了！』野史記載，他當時正深受與弟媳奧林匹亞的緋聞困擾，這抹陰影看穿了他的墮落靈魂。", artist: "維拉斯蓋茲：他以此色壓低明度，創造出令人生畏的宗教權威陰影。", img: "pope.jpg", chart: [45, 35, 20] },
+            { id: "02", name: "群青藍", latin: "Ultramarine", hex: "#120A8F", type: "天然青金石", history: "產自阿富汗，由絲路運抵歐洲，身價高於黃金。它是聖母瑪利亞長袍的唯一指定色。", secret: "【麵包與顏料的抉擇】：維梅爾因堅持使用頂級群青而陷入財困。他去世後，妻子被迫向麵包店老闆抵押作品。這抹藍色是燒掉全家人生計換來的永恆。", artist: "維梅爾：在《戴珍珠耳環的少女》中，他以近乎瘋狂的厚塗技法呈現此藍。", img: "girl.jpg", chart: [85, 10, 5] },
+            { id: "03", name: "木乃伊棕", latin: "Mummy Brown", hex: "#8F4B2D", type: "真實殘骸", history: "確實由古埃及木乃伊的屍體與瀝青研磨而成，在 18、19 世紀極受歡迎。", secret: "【畫室裡的葬禮】：畫家伯恩-瓊斯得知這顏料真的是用『死人』做的後，當場臉色發白，將所有木乃伊棕埋葬在花園中並舉行正式葬禮。該色直到 1964 年原料用盡才停產。", artist: "伯恩-瓊斯：在得知真相前，他常以此色賦予畫中女神神祕腐朽的膚色。", img: "mummy.jpg", chart: [20, 60, 20] },
+            { id: "04", name: "巴黎綠", latin: "Paris Green", hex: "#50C878", type: "乙酸亞砷酸銅", history: "19 世紀最燦爛的綠色，卻也是致命劇毒。當時被廣泛用於壁紙與時裝。", secret: "【綠色的殺機】：野史傳言拿破崙在聖赫勒拿島是被房間貼滿的巴黎綠壁紙毒死的。莫內也曾因愛用此色導致晚年眼疾嚴重，甚至出現嚴重的幻覺。", artist: "莫內：在他早期的草地綠中，大多隱藏著這種劇毒成分。", img: "green.jpg", chart: [10, 80, 10] },
+            { id: "05", name: "骨白", latin: "Bone White", hex: "#F9F6EE", type: "鍛燒骨灰", history: "由象牙或牛骨碎片鍛燒製成。它是比鉛白更溫暖、更穩定的象牙質感白色。", secret: "【重生的儀式】：中世紀修道院畫師會收集宴會後的骨頭進行隱密鍛燒。他們相信這代表『重生的儀式』，將塵世遺骸轉化為祭壇聖色。", artist: "杜勒：他擅長用骨白處理素描亮部，創造如骨雕般的精緻立體感。", img: "bone.jpg", chart: [90, 5, 5] },
+            { id: "06", name: "龍血紅", latin: "Dragon's Blood", hex: "#8E2323", type: "麒麟竭樹脂", history: "源於龍血樹的深紅樹脂。古代歐洲人深信這真的是巨龍與大象決鬥後的鮮血。", secret: "【咒語的契約】：古代魔法書指定要用龍血紅書寫咒語。煉金術士相信它能召喚火元素。中世紀商常編造恐怖故事以抬高其價格。", artist: "抄寫員：他們將龍血紅用於經書首字，讓經文帶著一種野性紅潤。", img: "dragon.jpg", chart: [40, 50, 10] },
+            { id: "07", name: "鉛白", latin: "Lead White", hex: "#FFFFFF", type: "鹼式碳酸鉛", history: "古典繪畫最重要的白色。雖具劇毒，但其覆蓋力與光澤是現代顏料無法替代的。", secret: "【蒼白的代價】：這曾是 17 世紀貴婦最愛的化妝品（鉛粉）。名媛們長期塗抹導致牙齒脫落、皮膚潰爛甚至發瘋致死。", artist: "魯本斯：他畫中那些豐滿肉體的光澤感，全靠鉛白帶來的特殊質感。", img: "lead.jpg", chart: [95, 2, 3] },
+            { id: "08", name: "藤黃", latin: "Gamboge", hex: "#E49B0F", type: "植物樹脂", history: "源於東南亞森林。採集過程極危險，採集者常需冒著被野獸襲擊的風險爬上高樹。", secret: "【致命的澄黃】：此色具強烈瀉藥性。相傳古時有顏料商偷吃藤黃試成色，結果導致嚴重脫水病逝。畫家們常被告誡不可誤食。", artist: "透納：他對藤黃的瘋狂運用，讓畫中的海浪呈現燃燒般的透明感。", img: "gamboge.jpg", chart: [10, 80, 10] },
+            { id: "09", name: "胭脂紅", latin: "Carmine", hex: "#960018", type: "胭脂蟲萃取", history: "西班牙帝國珍貴特產，由千萬隻寄生在仙人掌上的胭脂蟲研磨萃取而成。", secret: "【顏色間諜戰】：西班牙王室曾宣稱這是植物種子以保護技術。各國強權紛紛派出間諜竊取神祕種子，間諜戰延續了兩百年之久。", artist: "提香：他是胭脂紅大師。威尼斯貴族的紅袍疊加了數層這種昂貴蟲色。", img: "carmine.jpg", chart: [85, 10, 5] },
+            { id: "10", name: "大青", latin: "Smalt", hex: "#003399", type: "鈷玻璃粉末", history: "將鈷玻璃磨成粉製成。剛畫上去時與群青一樣美麗，卻極具『背叛感』。", secret: "【消逝的美景】：大青會隨時間變色為死灰色。許多大師畫作原本蔚藍的天空現在變成了灰濛濛的陰天，這就是歲月的背叛與殘酷。", artist: "哈爾斯：他畫中某些陰冷背景，就是大青隨歲月腐蝕後的痕跡。", img: "smalt.jpg", chart: [30, 40, 30] },
+            { id: "11", name: "銻黃", latin: "Antimony Yellow", hex: "#FFD700", type: "銻酸鉛", history: "又稱那不勒斯黃。源於龐貝遺跡，是火山灰與金屬化合物的結合。", secret: "【火山的贈禮】：文藝復興時期被視為『火神的眼淚』。其耐高溫特性是頂級色彩師不外傳的家族祕密，調配過程充滿煉金術色彩。", artist: "普桑：他常在英雄護甲中混入這種帶有火山力量的色彩。", img: "naples.jpg", chart: [70, 20, 10] },
+            { id: "12", name: "象牙黑", latin: "Ivory Black", hex: "#231F20", type: "炭化象牙", history: "源於象牙碎料燃燒後的灰燼。它是最深邃、帶有天鵝絨質感的黑色。", secret: "【昂貴的虛無】：維多利亞時代最好的象牙黑是用鋼琴鍵下腳料燒出來的。馬內曾說只有這款黑能畫出巴黎夜晚那種純粹虛無。", artist: "馬內：他著名的黑色晚禮服就是用象牙黑薄塗而成，高雅且深不可測。", img: "ivory.jpg", chart: [5, 5, 90] },
+            { id: "13", name: "泰爾紫", latin: "Tyrian Purple", hex: "#66023C", type: "骨螺黏液", history: "古代最昂貴的顏色，從數萬隻骨螺的腺體中萃取一克。象徵皇權與神聖地位。", secret: "【腐臭的榮耀】：雖然顏色高貴，但生產這種顏料的工廠極其惡臭。據傳羅馬皇帝穿著它時，身上其實帶著一股淡淡的腐魚味。", artist: "羅馬宮廷畫師：他們將泰爾紫用於皇帝肖像的邊緣，那是平民絕對禁止觸碰的禁忌色。", img: "tyrian.jpg", chart: [80, 15, 5] },
+            { id: "14", name: "印度黃", latin: "Indian Yellow", hex: "#E3A857", type: "牛尿沉澱", history: "源自印度。曾傳說是由喝下芒果葉的牛尿液沈澱而成，色澤極其鮮明透明。", secret: "【芒果葉的禁令】：19 世紀因涉及虐待動物（牛隻僅餵食芒果葉會導致痛苦）而被禁止生產。畫家們為了搶奪最後一批庫存，曾在倫敦市場發生肢體衝突。", artist: "透納：他在描繪夕陽餘暉時，最愛用印度黃來創造那種穿透雲霧的暖感。", img: "indian.jpg", chart: [15, 75, 10] },
+            { id: "15", name: "雌黃", latin: "Orpiment", hex: "#FFCC00", type: "三硫化二砷", history: "又稱石黃，煉金術士眼中極其神祕的物質。色澤金黃閃亮，卻極具毒性。", secret: "【危險的鄰居】：古代騙子常將雌黃加熱，試圖轉化為黃金。這款顏色極其不穩定，常會讓周邊的顏料（如鉛白）發黑，被畫家視為危險的毒物。", artist: "喬托：他在濕壁畫中極少使用它，因為它那多變且致命的本性會毀掉整面牆。", img: "orpiment.jpg", chart: [20, 70, 10] },
+            { id: "16", name: "銅綠", latin: "Verdigris", hex: "#43B3AE", type: "醋酸銅", history: "將銅板懸掛在沸騰的醋上反應生成的綠色晶體。是古代最常見的綠色顏料。", secret: "【葡萄皮的祕密】：法國畫家發現用釀酒剩下的葡萄皮殘渣覆蓋銅板，能產生更深邃的銅綠。但這種顏色極其不穩定，常會隨濕度轉為黑褐色。", artist: "揚·凡·艾克：在《阿諾菲尼婚禮》中，新娘的綠袍混合了多層銅綠以防止褪色。", img: "verdigris.jpg", chart: [35, 55, 10] },
+            { id: "17", name: "茜草紅", latin: "Madder Lake", hex: "#A50021", type: "茜草根萃取", history: "從茜草根部提取的古老染料。在合成化學出現前，它是軍服與平民布料的主要紅色。", secret: "【軍事紅與戰略】：英國軍隊著名的紅外套就是用它染成的。為了保持色彩鮮豔，各國曾對茜草種植技術進行嚴格管控，是早期的戰略物資。", artist: "拉斐爾：他擅長將茜草紅與硃砂混合，創造出聖母袍服那種溫潤的視覺層次。", img: "madder.jpg", chart: [60, 30, 10] },
+            { id: "18", name: "藍銅礦", latin: "Azurite", hex: "#007FFF", type: "天然碳酸銅", history: "與孔雀石共生的藍色礦石。它是中世紀歐洲繪畫中最重要的藍色顏料之一。", secret: "【綠色的背叛】：藍銅礦在潮濕環境下極易轉化為孔雀石（變綠）。這導致許多文藝復興時期的聖母畫像，天空看起來綠油油的。", artist: "喬托：他在壁畫中大量使用了藍銅礦，為對抗其褪色，發明了獨特的塗抹法。", img: "azurite.jpg", chart: [75, 20, 5] },
+            { id: "19", name: "雄黃", latin: "Realgar", hex: "#FF4D00", type: "四硫化四砷", history: "與雌黃伴生的紅橘色礦物。在古代中國與歐洲都被視為具有驅邪力量的神祕顏料。", secret: "【燃燒的毒火】：雄黃加熱後會散發出強烈的硫磺臭味與劇毒氣體。古希臘人稱它為『燃燒的硫磺』，觸碰它等於在玩火。", artist: "提香：他在描繪戰神馬爾斯的憤怒時，會在硃砂中摻入微量雄黃來增強刺眼感。", img: "realgar.jpg", chart: [25, 65, 10] },
+            { id: "20", name: "孔雀石", latin: "Malachite", hex: "#0BDA51", type: "天然碳酸銅", history: "人類史上最古老的綠色顏料之一。從古埃及墓室到東方山水畫都能見到它。", secret: "【墓穴的守護】：古埃及人相信將孔雀石粉末塗在眼瞼上能防禦眼疾（其實含砷有微量殺菌作用）。野史傳說它能讓死者的靈魂在冥界保持清醒。", artist: "北宋畫師：在《千里江山圖》中，那些翠綠的山頭正是使用了最高品質的孔雀石。", img: "malachite.jpg", chart: [30, 60, 10] },
+            { id: "21", name: "硃砂", latin: "Vermilion", hex: "#E34234", type: "硫化汞", history: "色彩最鮮豔奪目的紅色。在煉金術中，它被視為硫與汞完美結合的產物。", secret: "【長生不老藥】：硃砂在東方曾被當作長生不老藥的主成分。無數權貴因長期服用這種含汞顏料而慢性中毒身亡。它是最美的毒藥。", artist: "龐貝畫師：龐貝古城別墅牆面上那種驚人的『龐貝紅』，其實就是硃砂的傑作。", img: "vermilion.jpg", chart: [90, 7, 3] },
+            { id: "22", name: "靛藍", latin: "Indigo", hex: "#00416A", type: "木藍萃取", history: "從植物發酵而成的藍色。它不僅是繪畫顏料，更是影響全球貿易與奴隸制度的商品。", secret: "【染色的指甲】：靛藍染料的發酵過程極臭且骯髒。古代染匠的皮膚與指甲常被染成永恆的深藍色，被視為低下階級的標記。", artist: "葛飾北齋：他在《神奈川沖浪裏》中混合了普魯士藍與靛藍，創造出深海層次。", img: "indigo.jpg", chart: [70, 20, 10] },
+            { id: "23", name: "烏賊墨", latin: "Sepia", hex: "#704214", type: "烏賊墨囊萃取", history: "從烏賊墨囊中萃取的棕褐色。19 世紀攝影與水墨小品中最具文藝氣息的色調。", secret: "【魚腥味的情書】：早期的烏賊墨在使用時帶著濃郁的海腥味。野史說，維多利亞時代的情書如果用烏賊墨書寫，收信人甚至能聞到海的味道。", artist: "19世紀插畫家：他們愛用這種帶有溫潤感且不會發藍的棕褐色來捕捉舊時光。", img: "sepia.jpg", chart: [20, 50, 30] },
+            { id: "24", name: "凡戴克棕", latin: "Van Dyck Brown", hex: "#664228", type: "泥炭與有機物", history: "含有大量泥炭成分的褐色土，帶有一種獨特的透明感。因深受畫家凡戴克推崇而得名。", secret: "【腐敗的大地】：這種顏色本質上是高度腐爛的植物。野史考證，有些劣質的凡戴克棕甚至含有微小的古生物殘骸，讓畫作帶有一種『地質感』。", artist: "凡戴克：他筆下那些精緻絲絨的陰影與人物深邃的眼神，全靠這種泥炭棕堆疊。", img: "vandyck.jpg", chart: [15, 45, 40] }
+        ];
+
+        let filteredData = [...fullDatabase];
+        let activeIndex = 0;
+        let currentView = 'web';
+        let chartInstance = null;
+
+        function handleSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            filteredData = fullDatabase.filter(c => c.name.includes(query) || c.latin.toLowerCase().includes(query) || c.secret.includes(query) || c.id.includes(query) || c.artist.includes(query));
+            renderList();
+        }
+
+        function renderList() {
+            const list = document.getElementById('color-list');
+            document.getElementById('color-count').innerText = filteredData.length;
+            list.innerHTML = filteredData.map((c, i) => `
+                <button onclick="selectColor(${i})" class="w-full text-left px-5 py-3.5 rounded-xl transition-all flex items-center gap-5 ${i === activeIndex ? 'bg-white shadow-md border border-stone-200' : 'hover:bg-stone-200/50'}">
+                    <div class="w-4 h-4 rounded-full shadow-inner shrink-0" style="background-color: ${c.hex}"></div>
+                    <div class="overflow-hidden">
+                        <div class="text-[9px] text-stone-400 font-mono italic">#${c.id}</div>
+                        <div class="text-[13px] font-bold truncate ${i === activeIndex ? 'text-[#C27A29]' : 'text-stone-600'}">${c.name}</div>
+                    </div>
+                </button>
+            `).join('');
+        }
+
+        function renderContent() {
+            const color = filteredData[activeIndex];
+            const display = document.getElementById('main-display');
+            if (!color) {
+                display.innerHTML = `<div class="h-full flex items-center justify-center text-stone-300 italic">尚未找到該顏色資料</div>`;
+                return;
+            }
+
+            if (currentView === 'web') {
+                display.className = "flex-grow overflow-y-auto p-12 bg-[#FDFBF7]";
+                display.innerHTML = `
+                    <div class="max-w-6xl mx-auto flex flex-col lg:flex-row gap-20 fade-in">
+                        <div class="w-full lg:w-[35%]">
+                            <div class="bg-white p-10 rounded-3xl shadow-2xl border border-stone-100 relative overflow-hidden transition-all hover:scale-[1.01]">
+                                <div class="absolute -top-6 -right-6 p-10 opacity-5 font-bold text-9xl italic select-none">#${color.id}</div>
+                                <h3 class="text-3xl font-serif font-bold text-stone-800 mb-1">${color.latin}</h3>
+                                <h4 class="text-xl text-[#C27A29] font-medium tracking-[0.2em] mb-10 uppercase">${color.name}</h4>
+                                <div class="w-full aspect-square rounded-lg shadow-inner mb-10" style="background-color: ${color.hex}"></div>
+                                <div class="space-y-4 border-t border-stone-100 pt-8 text-sm">
+                                    <div class="flex justify-between"><span>HEX</span><span class="font-mono font-bold">${color.hex}</span></div>
+                                    <div class="flex justify-between"><span>顏料類型</span><span>${color.type}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="w-full lg:w-[65%] flex flex-col">
+                            <div class="mb-10 border-l-4 border-[#C27A29] pl-10 py-2">
+                                <h2 class="text-xs font-bold text-[#C27A29] mb-4 tracking-[0.4em] uppercase">典藏考據 / Chronicle</h2>
+                                <p class="text-stone-600 leading-relaxed text-lg font-serif italic">「${color.history}」</p>
+                            </div>
+                            <div class="secret-archive mb-12">
+                                <h5 class="text-[#C27A29] text-[10px] font-bold tracking-[0.4em] uppercase mb-6 flex items-center gap-3">㊙ 不為人知的祕密 / Unpublished Secret</h5>
+                                <p class="text-lg leading-relaxed italic font-serif text-stone-200">"${color.secret}"</p>
+                            </div>
+                            <div class="bg-white p-12 rounded-3xl shadow-xl border border-stone-100">
+                                <h2 class="text-xl font-bold text-stone-800 mb-10 border-b pb-4">藝術大師技術解析</h2>
+                                <div class="flex flex-col xl:flex-row gap-12">
+                                    <div class="w-full xl:w-3/5">
+                                        <div class="painting-frame rounded-sm overflow-hidden bg-stone-50">
+                                            <img src="${color.img}" class="w-full h-auto block" onerror="this.src='https://via.placeholder.com/600x800?text=Historical+Archive'">
+                                        </div>
+                                    </div>
+                                    <div class="w-full xl:w-2/5 flex flex-col">
+                                        <p class="text-stone-600 text-[13px] leading-relaxed mb-6 italic border-l border-stone-200 pl-6">"${color.artist}"</p>
+                                        <div class="mt-auto p-6 bg-stone-50 rounded-2xl shadow-inner">
+                                            <p class="text-[10px] text-stone-400 font-bold mb-4 uppercase tracking-widest text-center">成分比例 / Composition</p>
+                                            <div class="h-[180px]"><canvas id="colorChart"></canvas></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                display.className = "flex-grow flex items-center justify-center p-12 bg-[#D6D3D1]";
+                display.innerHTML = `
+                    <div class="book-sheet fade-in">
+                        <div class="book-spine"></div>
+                        <div class="flex-1 p-16 border-r border-stone-100 flex flex-col">
+                            <span class="text-stone-300 font-mono text-[10px] tracking-widest uppercase">Color Bible / Vol.${color.id}</span>
+                            <h2 class="text-6xl font-bold mt-10 mb-2 font-serif">${color.latin}</h2>
+                            <h3 class="text-2xl text-[#C27A29] font-medium mb-16 tracking-widest uppercase">${color.name}</h3>
+                            <div class="w-full aspect-[4/5] rounded shadow-inner" style="background-color: ${color.hex}"></div>
+                        </div>
+                        <div class="flex-1 p-16 flex flex-col overflow-y-auto no-scrollbar">
+                            <h4 class="text-xs font-bold uppercase tracking-[0.3em] border-b pb-5 mb-10 text-stone-400">Specimen Chronicle</h4>
+                            <p class="text-stone-600 text-sm leading-relaxed mb-10 font-serif italic">"${color.history}"</p>
+                            <div class="mb-10 p-8 bg-[#0F0E0D] text-[#E7E5E4] rounded-2xl text-[14px] font-serif italic border-l-4 border-[#C27A29] leading-relaxed shadow-lg">
+                                <span class="font-bold text-[#C27A29] block mb-4 uppercase tracking-[0.2em] text-[10px]">Secret Entry</span>
+                                ${color.secret}
+                            </div>
+                            <div class="mt-auto h-32"><canvas id="colorChart"></canvas></div>
+                        </div>
+                    </div>
+                `;
+            }
+            initChart(color);
+        }
+
+        function initChart(color) {
+            setTimeout(() => {
+                const ctx = document.getElementById('colorChart')?.getContext('2d');
+                if (!ctx) return;
+                if (chartInstance) chartInstance.destroy();
+                chartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['主色', '輔助色', '中性色'],
+                        datasets: [{ data: color.chart, backgroundColor: [color.hex, '#D4C9B3', '#1C1917'], borderWidth: 0 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                });
+            }, 100);
+        }
+
+        function setView(view) {
+            currentView = view;
+            document.getElementById('btn-web').className = `px-6 py-1.5 rounded-lg text-xs font-bold transition-all ${view === 'web' ? 'active-btn' : 'text-stone-400'}`;
+            document.getElementById('btn-book').className = `px-6 py-1.5 rounded-lg text-xs font-bold transition-all ${view === 'book' ? 'active-btn' : 'text-stone-400'}`;
+            renderContent();
+        }
+
+        function selectColor(i) { activeIndex = i; renderContent(); renderList(); }
+
+        function copyPost() {
+            const color = filteredData[activeIndex];
+            const text = `🎨 【色研聖經】祕密史料典藏 #${color.id} - ${color.name}\n\n🕵️ 不為人知的祕密：\n「${color.secret.substring(0, 100)}...」\n\n探索 360 色典藏百科。\n\n#色研聖經 #藝術野史 #色彩學 #產品設計 #考據`;
+            const el = document.createElement('textarea'); el.value = text; document.body.appendChild(el); el.select();
+            document.execCommand('copy'); document.body.removeChild(el);
+            const toast = document.getElementById('toast'); toast.style.opacity = '1'; setTimeout(() => toast.style.opacity = '0', 3000);
+        }
+
+        window.onload = () => { renderList(); renderContent(); };
+    </script>
+</body>
+</html>
